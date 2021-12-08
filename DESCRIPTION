@@ -1,0 +1,32 @@
+Package: designtools
+Type: Package
+Title: Test designs
+Version: 0.1.0
+Author: Jesse Koops
+Maintainer: Jesse Koops <jesse.koops@cito.nl>
+Description: Designs for linear tests, two stage MST tests and pretests.
+License: GPL-3
+Encoding: UTF-8
+Imports:
+    dplyr,
+    rlang,
+    tidyr,
+    lpSolveAPI,
+    igraph,
+    egg,
+    ggplot2,
+    stats,
+    utils,
+    methods,
+    Rcpp
+Suggests:
+  tufte,
+  knitr,
+  rmarkdown,
+  printr,
+  dexter
+RoxygenNote: 7.1.2
+VignetteBuilder: knitr
+LinkingTo: 
+    RcppArmadillo(>= 0.10.6),
+    Rcpp

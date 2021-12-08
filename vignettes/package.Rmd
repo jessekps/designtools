@@ -1,0 +1,219 @@
+---
+title: 'Designtools'
+author: "Jesse Koops"
+date: "`r Sys.Date()`"
+output: 
+  tufte::tufte_html:
+    tufte_features: ["fonts", "italics"]
+editor_options: 
+  chunk_output_type: console
+vignette: >
+  %\VignetteIndexEntry{Designtools}
+  %\VignetteEncoding{UTF-8}
+  %\VignetteEngine{knitr::rmarkdown}
+---
+
+<style>
+pre{
+width: 54% !important;
+background: whitesmoke;
+padding:4px;
+}
+</style>
+
+```{r setup, include=FALSE}
+library(knitr)
+library(printr)
+set.seed(123)
+opts_chunk$set(tidy = FALSE, message=FALSE)
+
+```
+
+# Introduction
+
+This package contains functions for test design and test administration planning. It is not aimed at item banking or parallel forms. As such it is assumed that the user is interested in making one or more tests that are in some way optimal. The package contains most common functionality for ATA with the exception of parallel forms and enemy groups (since they are not much use if you omit parallel tests). Some preliminary work has been done on a two stage MST design. 
+
+# Pretests
+
+We assume we have a number of items which can optionally be grouped (e.g. a reading text). We wish to make an overlapping design with a minimal number of booklets where each item appears in an equal number of booklets. The booklets are designed by making sets of unique items and combining them into booklets. This produces a design that is easy to assemble and administer. The design can optionallly be balanced according to categorical variables, like a test matrix or estimated difficulty. All balancing variables are treated as nominal. 
+
+Below we use a set of approx 200 items divided into 52 reading tests of variable length. Each item has a category (know, apply, evaluate) and an estimated difficulty level (1,2,3).
+
+```{r}
+library(designtools)
+library(dplyr)
+
+nit = 203
+
+items = tibble(item_id = sprintf('itm%03i',1:nit), 
+               text_id = sample(paste0('text',1:60), nit, replace=TRUE),
+               category = sample(c('know','apply','evaluate'), nit, TRUE, prob=c(3,2,1)),
+               difficulty = sample(1:3, nit, TRUE, prob=c(1,2,1)))
+```
+
+For a pretest we want to use a maximum of 30 items in a booklet.
+
+```{r}
+dsg = pretest_design(items, max_nit=30, 
+                     balance = c('category','difficulty'),
+                     friends = 'text_id')
+
+head(dsg)
+```
+
+We can see that the result is a deceptively simple block design with `r n_distinct(dsg$booklet_id)` booklets.
+
+```{r, fig.margin=TRUE, echo=FALSE}
+library(ggplot2)
+dsg$booklet_id = as.factor(dsg$booklet_id)
+ggplot(dsg,aes(y=booklet_id,x=reorder(item_id,block))) +
+    geom_tile(fill='gold2') +
+    theme(axis.text.x=element_blank(),
+          axis.ticks.x=element_blank()) +
+    theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
+          panel.background = element_blank()) +
+    xlab('items') + ylab('booklets') + ggtitle('block design')
+```
+
+
+Friend groups are guaranteed to not be broken up in booklets. Category and difficulty are balanced as best as possible. However, one can imagine that the degree to which this is possible depends on the number of variables, number of categories per variable and the presence and size of friend groups.
+
+
+
+```{r, echo=FALSE}
+pc = dsg %>%
+  count(booklet_id, category) %>%
+  group_by(booklet_id) %>%
+  mutate(p = n/sum(n))
+
+pd = dsg %>%
+  count(booklet_id, difficulty) %>%
+  group_by(booklet_id) %>%
+  mutate(p = n/sum(n))
+
+egg::ggarrange(
+  ggplot(pc, aes(fill=category, y=p, x=booklet_id)) +
+    geom_bar(stat='identity') +
+    coord_flip() +
+    ylab('proportion of items') +
+    ggtitle('category'),
+  
+  ggplot(pd, aes(fill=difficulty, y=p, x=booklet_id)) +
+    geom_bar(stat='identity') +
+    coord_flip() +
+    ylab('proportion of items') +
+    ggtitle('difficulty'),
+  
+  nrow=1
+)
+
+```
+
+We want to keep the design as simple as possible to minimize the potential for mistakes. It is also, especially for paper tests, a good idea to use only one test version per school. In case names are not filled out, front pages are missing or schools copy tests including barcodes, etcetera, it helps  to know that there is only one version in a school.
+
+This leads to an optimization problem, namely how do we assign test versions to schools so that the number of students assigned to each test version is as similar as possible? This problem is known as a multi-way partitioning problem which is np-hard. The algorithm that is employed at the moment is heuristic but performs reasonably well. We have `r n_distinct(dsg$booklet_id)` test versions and 100 schools of various sizes. 
+
+```{r}
+schools = tibble(school_id=sprintf('school%03i',1:100),
+                 school_size = sample(10:60,100,replace=TRUE))
+
+n_booklets = n_distinct(dsg$booklet_id)
+
+asgn = schools %>%
+  mutate(booklet = size_groups(school_size,n_booklets))
+
+asgn %>%
+  group_by(booklet) %>%
+  summarise(n_schools = n(),
+            n_students = sum(school_size))
+
+```
+
+
+# Linear tests
+
+After succesful administration of a pre-test we now hopefully have some item parameters. Constructing a test involves a lot of guesswork. Most problematic is that usually we need to 'know' what the population distribution is for our actual test on the ability scale of the pretest. In some instances we can take a fairly educated guess.
+
+We start with item parameters and some item properties.
+
+```{r}
+pars = tibble(item_id = sprintf('item%03i',1:300), 
+              item_score = 1, beta=runif(300,-2,2))
+
+items = tibble(item_id = sprintf('item%03i',1:300), 
+               category = sample(c('know','apply','evaluate'),300,TRUE))
+
+```
+
+Next is a choice of what we want to optimize. The options are test length, information, or the sum of an arbitrary quality index. To this we can add a number of constraints. These can be:
+
+* the number of items
+* maximum SEM at selected points on the ability scale
+* a range of expected average pvalue
+* a test matrix, either as ratio or number of items
+
+In addition we can have items selected as groups, similar to the pretest design above. Below we optimize test information at $\theta = 0.5$.
+
+```{r}
+ds = test_design(pars, 
+                 item_properties = items,
+                 population_density = dnorm,
+                 optimize='information', 
+                 information_points = 0.5,
+                 mean_pvalue = c(.6,.7),
+                 category = list(know=40,apply=15,evaluate=20))
+
+count(ds, category)
+```
+
+We see that 75 items are selected according to the constraints. The resulting information function is plotted in the margin.
+
+```{r, fig.margin=TRUE,fig.cap='Information function of the constructed test. The vertical line indicates the point of optimization'}
+library(dexter)
+plot(information(semi_join(pars,ds,by='item_id')), 
+     from=-4,to=4,
+     xlab=expression(theta),ylab='information')
+
+abline(v=0.5)
+```
+
+
+# Multi stage tests
+
+Construction of MST tests is quite similar with one exception: the user has to supply a routing test. So to start we construct a routing module of 15 items.
+
+```{r}
+routing_test = test_design(pars, 
+                           item_properties = items,
+                           optimize='information',
+                           information_points = c(-0.5,0.5),
+                           mean_pvalue = c(0.6,0.7),
+                           nit=15,
+                           category = list(know=c(5,15),
+                                           apply=c(3,15),
+                                           evaluate=c(4,15)))
+
+```
+
+Next we design an MST test by providing the routing module, the number of second stage modules and any other constraints. The constraints apply to each resulting booklet individually, i.e. to each combination of the routing module and the second stage module. A future version of the package might offer more flexibility in this regard.
+
+```{r}
+ds = mst_design(pars, 
+                routing_module=routing_test,
+                nmod = 3,
+                item_properties = items,
+                population_density = dnorm,
+                optimize='information', 
+                information_points = c(-1,0,1),
+                mean_pvalue = c(.5,.7),
+                category = list(know=40,apply=15,evaluate=20))
+
+head(ds$design)
+```
+
+The mst_design function returns a list containing a design and routing rules. For the mst design we have an experimental plot. The upper margin shows the ability distributions in each booklet while the main plot shows the information. The dotted line shows the weighted sum of the booklet information (weighted according to the probability of making this booklet given theta). This is the function that is optimized in the mst_design function. I'm not really sure if that is the correct way to do it yet.
+
+```{r}
+plot_mst_design(ds,pars,type='info', infolines=c(-1,0,1))
+```
+

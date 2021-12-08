@@ -1,0 +1,28 @@
+useDynLib(designtools, .registration=TRUE)
+importFrom(Rcpp, "evalCpp")
+import(dplyr)
+importFrom(tidyr, "pivot_wider")
+importFrom(rlang, ".data")
+
+import(ggplot2)
+importFrom(egg, "ggarrange")
+
+
+import(lpSolveAPI)
+importFrom(igraph,"graph_from_adjacency_matrix","ego")
+
+importFrom(stats, "dnorm", "coef", "runif")
+importFrom(utils, "combn")
+importFrom(methods,"new")
+
+export(test_design)
+export(mst_design)
+export(pretest_design)
+export(size_groups)
+
+#plots
+export(plot_mst_design)
+
+S3method(print,ds_marginal_plot)
+S3method(plot,ds_marginal_plot)
+S3method('+',ds_marginal_plot)
