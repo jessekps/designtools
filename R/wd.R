@@ -111,7 +111,7 @@ pretest_design3 = function(items, max_nit, balance=NULL, friends=NULL)
   res2 = tsalesman(m)
   
 
-  r = rep(res2$path, each=2)
+  r = rep(res2$path, each=2) + 1
   r = c(r[-1],r[1])
   
   tibble( booklet_id = rep(1:nblocks, each=2),

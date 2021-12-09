@@ -10,7 +10,6 @@ using Rcpp::DataFrame;
 using Rcpp::Named;
 
 // the kk heuristic, from: https://stackoverflow.com/questions/68421928/how-to-reconstruct-partitions-in-the-karmarkar-karp-heuristic-multi-way-partitio
-// to do: transform to full kk?
 
 
 namespace {
