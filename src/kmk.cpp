@@ -120,12 +120,12 @@ Partition KarmarkarKarp(const std::vector<int>& numbers,
 // [[Rcpp::export]]
 DataFrame kmk_partition(const std::vector<int>& nrs, const int k)
 {
-	int j=0, g=1;
 	std::vector<int> ogr(nrs.size());
 	std::vector<int> onr(nrs.size());
 	
 	const Partition kk = KarmarkarKarp(nrs, k);	
 	
+	int j=0, g=1;
 	for(auto ss{kk.subsets().begin()}; ss != kk.subsets().end(); ++ss)
 	{
 		for(auto it{(*ss).numbers().begin()}; it != (*ss).numbers().end(); ++it)
@@ -138,6 +138,5 @@ DataFrame kmk_partition(const std::vector<int>& nrs, const int k)
 
 	return DataFrame::create(Named("size")=onr, Named("group")=ogr);
 }
-
 
 

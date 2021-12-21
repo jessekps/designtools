@@ -23,11 +23,46 @@ size_groups = function(size, k=NULL, n=NULL)
   if(!is.null(k))
   {
     if(length(size)<k)
-      stop('size may not be smaller than k')
+      stop('length of size may not be shorter than k')
     if(length(size)==k)
       return(1:length(size))
     
     prt = kmk_partition(size, k) %>% arrange(size)
+    
+
+    if(length(size)<50)
+    {
+      grp = split(prt$size, prt$group)
+      sz = sapply(grp, sum) 
+      if(max(sz) - min(sz)>1)
+      {
+        for(i in 1:(length(grp)-1))
+        {
+          for(j in (i+1):length(grp))
+          {
+            df = abs(sz[i]-sz[j])
+            iter = df>1
+            while(iter)
+            {
+              iter=FALSE
+              for(e1 in grp[[i]]) for(e2 in grp[[j]])
+              {
+                if(abs((sz[i]-e1+e2)-(sz[j]-e2+e1)) < df)
+                {
+                  grp[[i]][grp[[i]] == e1][1] = e2
+                  grp[[j]][grp[[j]] == e2][1] = e1
+                  sz[i] = sz[i]-e1+e2
+                  sz[j] = sz[j]-e2+e1
+                  df = abs(sz[i]-sz[j])
+                  iter = df>1
+                }
+              }
+            }
+          }
+        }
+      }
+      prt = tibble(group=rep(1:length(grp),sapply(grp,length)), size=unlist(grp)) %>% arrange(size)
+    }
     
     s = tibble(size=size, i=1:length(size)) %>% arrange(size)
     
