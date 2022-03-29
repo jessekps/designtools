@@ -18,6 +18,8 @@ divide objects into bins of equal size. Uses a sort of greedy method
 }
 \details{
 You must specify only one of k or n. Since bin packing and the multi-way partition problem are NP-hard,
-the solution is not guaranteed to be optimal. Running the function several times will give different results
-which might be more (or less) to your liking.
+the solution is not guaranteed to be optimal. 
+
+Bin packing (i.e. maximum size groups), puts items of larger size together, 
+the number of items in each bin thus tends to be very unequal
 }

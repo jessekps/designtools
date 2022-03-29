@@ -205,7 +205,7 @@ ds = mst_design(pars,
                 population_density = dnorm,
                 optimize='information', 
                 information_points = c(-1,0,1),
-                mean_pvalue = c(.5,.7),
+                path_mean_pvalue = c(.5,.7),
                 category = list(know=40,apply=15,evaluate=20))
 
 head(ds$design)

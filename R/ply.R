@@ -19,6 +19,9 @@ size_groups = function(size, k=NULL, n=NULL)
 {
   if(!xor(is.null(k),is.null(n)))
     stop("you must specify one of `k` or `n`")
+  
+  if(length(size)==0)
+    return(integer())
 
   if(!is.null(k))
   {
@@ -68,7 +71,7 @@ size_groups = function(size, k=NULL, n=NULL)
     
     s$group = prt$group
     
-    s %>% arrange(i) %>% pull(group)
+    s %>% arrange(.data$i) %>% pull(.data$group)
     
   } else
   {
