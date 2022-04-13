@@ -155,13 +155,13 @@ Next is a choice of what we want to optimize. The options are test length, infor
 In addition we can have items selected as groups, similar to the pretest design above. Below we optimize test information at $\theta = 0.5$.
 
 ```{r}
-ds = test_design(pars, 
-                 item_properties = items,
-                 population_density = dnorm,
-                 optimize='information', 
-                 information_points = 0.5,
-                 mean_pvalue = c(.6,.7),
-                 category = list(know=40,apply=15,evaluate=20))
+ds = test_design(items,
+                 item_count(category=='know') == 40,
+                 item_count(category=='apply') == 15,
+                 item_count(category=='evaluate') == 20,
+                 difficulty_constraint(0.6, 0.7),
+                 objective = maximize_information(theta=0.5),
+                 pars=pars)
 
 count(ds, category)
 ```
@@ -171,7 +171,7 @@ We see that 75 items are selected according to the constraints. The resulting in
 ```{r, fig.margin=TRUE,fig.cap='Information function of the constructed test. The vertical line indicates the point of optimization'}
 library(dexter)
 plot(information(semi_join(pars,ds,by='item_id')), 
-     from=-4,to=4,
+     from=-4,to=4,bty='l',
      xlab=expression(theta),ylab='information')
 
 abline(v=0.5)
@@ -183,30 +183,34 @@ abline(v=0.5)
 Construction of MST tests is quite similar with one exception: the user has to supply a routing test. So to start we construct a routing module of 15 items.
 
 ```{r}
-routing_test = test_design(pars, 
-                           item_properties = items,
-                           optimize='information',
-                           information_points = c(-0.5,0.5),
-                           mean_pvalue = c(0.6,0.7),
-                           nit=15,
-                           category = list(know=c(5,15),
-                                           apply=c(3,15),
-                                           evaluate=c(4,15)))
+routing_test = test_design(items,
+                           item_count(category=='know') >= 5,
+                           item_count(category=='apply') >= 3,
+                           item_count(category=='evaluate') >= 4,
+                           item_count() == 15,
+                           difficulty_constraint(0.6, 0.7),
+                           objective = maximize_information(theta=c(-0.5,0.5)),
+                           pars=pars)
+
+
+
 
 ```
 
 Next we design an MST test by providing the routing module, the number of second stage modules and any other constraints. The constraints apply to each resulting booklet individually, i.e. to each combination of the routing module and the second stage module. A future version of the package might offer more flexibility in this regard.
 
 ```{r}
-ds = mst_design(pars, 
+ds = mst_design(items, 
                 routing_module=routing_test,
                 nmod = 3,
-                item_properties = items,
+                item_count(category=='know') == 40,
+                item_count(category=='apply') == 15,
+                item_count(category=='evaluate') == 20,
+                objective = maximize_information(theta=c(-1,0,1)),
+                difficulty_constraint(.5,.7),
                 population_density = dnorm,
-                optimize='information', 
-                information_points = c(-1,0,1),
-                path_mean_pvalue = c(.5,.7),
-                category = list(know=40,apply=15,evaluate=20))
+                pars=pars)
+
 
 head(ds$design)
 ```
@@ -214,6 +218,6 @@ head(ds$design)
 The mst_design function returns a list containing a design and routing rules. For the mst design we have an experimental plot. The upper margin shows the ability distributions in each booklet while the main plot shows the information. The dotted line shows the weighted sum of the booklet information (weighted according to the probability of making this booklet given theta). This is the function that is optimized in the mst_design function. I'm not really sure if that is the correct way to do it yet.
 
 ```{r}
-plot_mst_design(ds,pars,type='info', infolines=c(-1,0,1))
+plot_mst_design(ds,pars,type='info', ref_lines=c(-1,0,1))
 ```
 

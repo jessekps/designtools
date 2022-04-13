@@ -9,7 +9,7 @@ plot_mst_design(
   pars,
   populaton_density = dnorm,
   type = c("sem", "info"),
-  infolines = NULL
+  ref_lines = NULL
 )
 }
 \arguments{
@@ -21,7 +21,7 @@ plot_mst_design(
 
 \item{type}{information or SEM}
 
-\item{infolines}{for the information plot vertical lines at these points}
+\item{ref_lines}{for the information plot vertical lines at these points}
 }
 \value{
 ggplot2 like object to be plotted

@@ -73,8 +73,19 @@ tsalesman = function(m)
   res
 }
 
-
-pretest_design3 = function(items, max_nit, balance=NULL, friends=NULL)
+#' Simple pretest designs
+#'
+#' @param items data.frame with columns item_id and variables listed under "balance" or "friends"
+#' @param max_nit maximum number of items in a booklet.
+#' @param balance categorical variables in items that will be balanced across booklets
+#' @param friends name of an id column in items that specifies friend groups (e.g. reading texts)
+#' 
+#' @return data.frame
+#' 
+#' @details 
+#' This function returns a simple chained block design which minimizes the number of booklet versions
+#'
+pretest_design = function(items, max_nit, balance=NULL, friends=NULL)
 {
   overlap = 2L
   

@@ -2,66 +2,51 @@
 % Please edit documentation in R/designs.R
 \name{test_design}
 \alias{test_design}
+\alias{mst_design}
 \title{Linear  test design through LP}
 \usage{
 test_design(
-  pars,
-  optimize = c("length", "information", "quality"),
-  item_properties = NULL,
+  items,
+  ...,
+  objective = random_test(),
+  pars = NULL,
   population_density = dnorm,
-  sem_constraint = NULL,
-  mean_pvalue = NULL,
-  information_points = 0,
-  nit = NULL,
-  friends = NULL,
-  ...
+  friends = NULL
+)
+
+mst_design(
+  items,
+  routing_module,
+  ...,
+  objective = random_test(),
+  nmod = 3L,
+  pars = NULL,
+  population_density = dnorm,
+  friends = NULL
 )
 }
 \arguments{
-\item{pars}{item parameters}
+\item{items}{data.frame with column item_id and any other columns used in the constraints or as 'friends'}
 
-\item{optimize}{minimal test length (optionally weighted), maximum information (on `information_points`),
-or maximum sum of `items$item_quality`}
+\item{...}{constraints on test content or psychometric properties, see details}
 
-\item{item_properties}{data.frame with columns item_id, and one or more of
-item_weight (for test length optimization, defaults to 1),
-item_quality (for quality optimization),
-other discrete properties (e.g. for test matrix constraints, item groupings)}
+\item{objective}{function to optimize, see details}
 
-\item{population_density}{density function for the population, the default is standard normal. 
-the function should accept a vector of theta and return a vector of densities. 
-To use for example a normal distribtution with a different mean, specify `population density = function(x) dnorm(x, mean=1)`}
+\item{pars}{item parameters, either a data.frame or a fit object from dexter::fit_enorm, dexterMST::fit_enorm_MST}
 
-\item{sem_constraint}{list/data.frame with columns theta and sem, maximum allowed SEM on these points}
+\item{population_density}{density function, eg `dnorm` or `function(x) dnorm(x,mean=1,1)`}
 
-\item{mean_pvalue}{vector of length two, minimum and maximum average expected pvalue.
-Of course this depends on population_density}
+\item{friends}{name of a column in items that specifies friend groups (e.g. a text_id for reading texts)}
 
-\item{information_points}{only needed when `optimize = 'information'`, 
-will optimize the mean information on these points.}
+\item{routing_module}{data.frame with column item_id, specifying the routing module}
 
-\item{nit}{number of items, single integer or integer range}
-
-\item{friends}{name of an id column in items that specifies friend groups (e.g. reading texts)}
-
-\item{...}{content constraints, the argument names must refer to columns in item_properties, see details}
+\item{nmod}{numer of modules}
 }
 \value{
 A tibble with the selected items.
 }
 \description{
 Linear  test design through LP
-}
-\details{
-Content constraints refer to columns in item_properties that must contain discrete values. For example suppose
-that `item_properties` contains a column named `bloom_tax` which contains the values 'know', 'apply' and 'evaluate'.
-You can add a constraint specifying exactly how many of each should be in the test, e.g. 
-`bloom_tax = list(know=10, apply=15, evaluate=5)`. You may also specify ranges, e.g.
-`bloom_tax = list(know=c(10,15), apply=15, evaluate=(5,10))`. Lastly, you can specify these as ratio's. In this case
-only ranges are allowed. For example: `bloom_tax = list(know=c(.2,.3), apply=c(.5,.6), evaluate=c(.2,.3))`.
- 
-MST designs are currently limited to two stages. The first stage must be supplied by the user. Routing is
-optimized for equal size groups for the second stage.
 }
 \examples{
 library(dplyr)
@@ -70,17 +55,29 @@ set.seed(123)
 pars = tibble(item_id=sprintf('item\%03i',1:300), item_score=1,beta=runif(300,-2,2))
 items = tibble(item_id=sprintf('item\%03i',1:300), category = sample(c('A','B','C'),300,TRUE))
 
-ds = test_design(pars, item_properties=items,optimize='information', mean_pvalue = c(.6,.7),
-                 category=list(A=40,B=15,C=20))
+ds = test_design(items, 
+                 item_count(category=='A') == 40,
+                 item_count(category=='B') == 15,
+                 item_count(category=='C') == 20,
+                 difficulty_constraint(0.6, 0.7),
+                 objective = maximize_information(theta=0),
+                 pars=pars)
 
-items2 = tibble(item_id=sprintf('item\%03i',1:300),
-                category = sample(c('A','B','C'),300,TRUE),
-                text_id = sample(1:100,300,TRUE))
+items2 = tibble(item_id = sprintf('item\%03i',1:300),
+                 category = sample(c('A','B','C'),300,TRUE),
+                 text_id = sample(1:100,300,TRUE))
 
-ds2 = test_design(pars, item_properties=items2, optimize='length', mean_pvalue = c(.6,.8),
-                 category=list(A=c(0.5,0.55),B=c(0.15,0.20),C=c(0.25,0.30)),
-                 sem_constraint = list(theta=c(0,1),sem=c(.5,.5)),
-                 friends='text_id')
+ds2 = test_design(items2, 
+                  difficulty_constraint(0.6, 0.8),
+                  item_fraction(category=='A') >= 0.5,
+                  item_fraction(category=='A') <= 0.55,
+                  item_fraction(category=='B') >= 0.15,
+                  item_fraction(category=='B') <= 0.20,
+                  item_fraction(category=='C') >= 0.25,
+                  item_fraction(category=='C') <= 0.30,
+                  irt_constraint(theta=c(0,1), max_sem=0.5),
+                  pars=pars,
+                  friends='text_id')
 
 ds2 \%>\% count(category) \%>\% mutate(p=n/sum(n))
 

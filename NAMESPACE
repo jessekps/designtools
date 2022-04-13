@@ -2,7 +2,7 @@ useDynLib(designtools, .registration=TRUE)
 importFrom(Rcpp, "evalCpp")
 import(dplyr)
 importFrom(tidyr, "pivot_wider")
-importFrom(rlang, ".data")
+importFrom(rlang, ".data", "caller_env","eval_tidy","enquos","enexprs")
 
 import(ggplot2)
 importFrom(egg, "ggarrange")
@@ -12,8 +12,20 @@ import(lpSolveAPI)
 importFrom(igraph,"graph_from_adjacency_matrix","ego")
 
 importFrom(stats, "dnorm", "coef", "runif")
-importFrom(utils, "combn")
+importFrom(utils, "combn", "getS3method")
 importFrom(methods,"new")
+
+
+export(item_sum)
+export(item_count)
+export(item_fraction)
+export(irt_constraint)
+export(difficulty_constraint)
+export(minimize_items)
+export(maximize_items)
+export(random_test)
+export(maximize_information)
+
 
 export(test_design)
 export(mst_design)

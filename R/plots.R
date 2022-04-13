@@ -1,16 +1,19 @@
 
+
+
+
 #' IRT plot of mst design effects
 #' 
 #' @param md mst design, output of function \code{\link{mst_design}}
 #' @param pars item parameters
 #' @param populaton_density density function for the population, the default is standard normal. 
 #' @param type information or SEM
-#' @param infolines for the information plot vertical lines at these points
+#' @param ref_lines for the information plot vertical lines at these points
 #' 
 #' @returns ggplot2 like object to be plotted
 #' 
 plot_mst_design = function(md,pars, populaton_density=dnorm,type=c('sem','info'), 
-                    infolines=NULL)
+                    ref_lines=NULL)
 {
   type=match.arg(type)
   rt_pars = md$design %>%
@@ -34,6 +37,7 @@ plot_mst_design = function(md,pars, populaton_density=dnorm,type=c('sem','info')
     tibble(theta=grd,booklet=i, 
            info=info,
            sem=1/sqrt(info),
+           p=p_mod[,i],
            w=wm)               
   }) %>%
     bind_rows() %>%
@@ -41,8 +45,8 @@ plot_mst_design = function(md,pars, populaton_density=dnorm,type=c('sem','info')
   
   dat2 = dat %>%
     group_by(.data$theta) %>%
-    summarise(avg_sem = sum(.data$w*.data$sem)/sum(.data$w),
-              avg_info = sum(.data$w*.data$info)/sum(.data$w))
+    summarise(avg_info = sum(.data$p*.data$info)) %>%
+    mutate(avg_sem = 1/sqrt(.data$avg_info))
   
   if(type=='info'){
     p = ggplot(dat,aes(x=.data$theta,y=.data$info)) +
@@ -51,11 +55,13 @@ plot_mst_design = function(md,pars, populaton_density=dnorm,type=c('sem','info')
       ylab('information') +
       theme_bw()
     
-    if(!is.null(infolines))
+    if(!is.null(ref_lines))
     {
-      ymx = sapply(infolines,function(tht) dat2$avg_info[which.min(abs(dat2$theta-tht))])
-      p = p + geom_segment(data=tibble(theta=infolines,ymx=ymx),
-                           aes(xend=.data$theta,yend=.data$ymx),y=0,linetype='dotdash')
+      ymx = sapply(ref_lines,function(tht) dat2$avg_info[which.min(abs(dat2$theta-tht))])
+
+      p = p + 
+        geom_segment(data=tibble(theta=ref_lines,ymx=ymx),
+                           aes(xend=.data$theta,yend=.data$ymx),y=0,linetype='dotdash') 
     }
   } else
   {
