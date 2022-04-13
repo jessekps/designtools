@@ -9,9 +9,9 @@ irt_constraint(theta, min_information = NULL, max_sem = NULL)
 \arguments{
 \item{theta}{points on the ability scale to evaluate information}
 
-\item{min_information}{the minimum information required, must be the same length as theta}
+\item{min_information}{the minimum information required}
 
-\item{max_sem}{the maximum allowed Standard Error of Measurement, must be the same length as theta}
+\item{max_sem}{the maximum allowed Standard Error of Measurement}
 }
 \description{
 Typically used when the length of the test is minimized. You must specify either min_information or max_sem but not both.

@@ -177,8 +177,8 @@ to_lp.content_specification = function(f,...,items,env, mst=NULL)
 #' Typically used when the length of the test is minimized. You must specify either min_information or max_sem but not both.
 #' 
 #' @param theta points on the ability scale to evaluate information
-#' @param min_information the minimum information required, must be the same length as theta
-#' @param max_sem the maximum allowed Standard Error of Measurement, must be the same length as theta
+#' @param min_information the minimum information required
+#' @param max_sem the maximum allowed Standard Error of Measurement
 #' 
 #' 
 #' 
@@ -372,11 +372,12 @@ to_lp.constraint_difficulty = function(f,...,items, pars, population_density, ms
 
 #' Property of the test to optimize
 #' 
-#' minimize_items or maximize_items optimize some property of the items in the tes, random_test creates a random selection of items
-#' maximize_information maximizes the information on specified points of the ability scale.
+#' Minimize_items or maximize_items minimize of maximize some property of the items in the test. 
+#' Random_test creates a random selection of items.
+#' Maximize_information maximizes the information on specified points of the ability scale.
 #' 
 #' 
-#' @param property unquoted column name or statement to be evaluated in the context of items, e.g. max_score, time_required. If NULL
+#' @param property unquoted column name or statement to be evaluated in the context of items, e.g. item_max_score, time_required. If NULL
 #' optimizes the number of items in the test.
 #' @param theta point(s) on the ability scale on which the information should be maximized
 #' @param weight relative weights attached to the information on theta

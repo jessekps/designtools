@@ -16,7 +16,7 @@ random_test()
 maximize_information(theta = 0, weight = 1)
 }
 \arguments{
-\item{property}{unquoted column name or statement to be evaluated in the context of items, e.g. max_score, time_required. If NULL
+\item{property}{unquoted column name or statement to be evaluated in the context of items, e.g. item_max_score, time_required. If NULL
 optimizes the number of items in the test.}
 
 \item{theta}{point(s) on the ability scale on which the information should be maximized}
@@ -24,6 +24,7 @@ optimizes the number of items in the test.}
 \item{weight}{relative weights attached to the information on theta}
 }
 \description{
-minimize_items or maximize_items optimize some property of the items in the tes, random_test creates a random selection of items
-maximize_information maximizes the information on specified points of the ability scale.
+Minimize_items or maximize_items minimize of maximize some property of the items in the test. 
+Random_test creates a random selection of items.
+Maximize_information maximizes the information on specified points of the ability scale.
 }
