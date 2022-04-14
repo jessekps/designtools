@@ -31,13 +31,13 @@ opts_chunk$set(tidy = FALSE, message=FALSE)
 
 # Introduction
 
-This package contains functions for test design and test administration planning. It is not aimed at item banking or parallel forms. As such it is assumed that the user is interested in making one or more tests that are in some way optimal. The package contains most common functionality for ATA with the exception of parallel forms and enemy groups (since they are not much use if you omit parallel tests). Some preliminary work has been done on a two stage MST design. 
+This package contains functions for test design and test administration planning. It is not aimed at item banking or parallel forms. As such it is assumed that the user is interested in making one or several tests that are in some way optimal. The package contains most common functionality for automatic test assembly with the exception of parallel forms. Some preliminary work has been done on a two stage MST design. 
 
 # Pretests
 
-We assume we have a number of items which can optionally be grouped (e.g. a reading text). We wish to make an overlapping design with a minimal number of booklets where each item appears in an equal number of booklets. The booklets are designed by making sets of unique items and combining them into booklets. This produces a design that is easy to assemble and administer. The design can optionallly be balanced according to categorical variables, like a test matrix or estimated difficulty. All balancing variables are treated as nominal. 
+We will assume we have a number of items which can optionally be grouped (e.g. in a reading text). We wish to make an connected design with a minimal number of booklets where each item appears in an equal number of booklets.  This produces a design that is easy to assemble, administer and analyse. The booklets are constructed by making sets of unique items and combining them into booklets.The design can optionally be balanced according to categorical variables, like a test matrix or estimated difficulty, so that the different booklets are 'alike'. 
 
-Below we use a set of approx 200 items divided into 52 reading tests of variable length. Each item has a category (know, apply, evaluate) and an estimated difficulty level (1,2,3).
+Below we use a set of approx 200 items belonging to 52 reading texts of variable length. Each item has a category (know, apply, evaluate) and an estimated difficulty level (1,2,3).
 
 ```{r}
 library(designtools)
@@ -51,10 +51,11 @@ items = tibble(item_id = sprintf('itm%03i',1:nit),
                difficulty = sample(1:3, nit, TRUE, prob=c(1,2,1)))
 ```
 
-For a pretest we want to use a maximum of 30 items in a booklet.
+For a given pretest we want to use a maximum of 30 items in a booklet.
 
 ```{r}
-dsg = pretest_design(items, max_nit=30, 
+dsg = pretest_design(items, 
+                     max_nit=30, 
                      balance = c('category','difficulty'),
                      friends = 'text_id')
 
@@ -111,6 +112,8 @@ egg::ggarrange(
 
 We want to keep the design as simple as possible to minimize the potential for mistakes. It is also, especially for paper tests, a good idea to use only one test version per school. In case names are not filled out, front pages are missing or schools copy tests including barcodes, etcetera, it helps  to know that there is only one version in a school.
 
+# Test assignment
+
 This leads to an optimization problem, namely how do we assign test versions to schools so that the number of students assigned to each test version is as similar as possible? This problem is known as a multi-way partitioning problem which is np-hard. The algorithm that is employed at the moment is heuristic but performs reasonably well. We have `r n_distinct(dsg$booklet_id)` test versions and 100 schools of various sizes. 
 
 ```{r}
@@ -130,7 +133,7 @@ asgn %>%
 ```
 
 
-# Linear tests
+# Linear test design
 
 After succesful administration of a pre-test we now hopefully have some item parameters. Constructing a test involves a lot of guesswork. Most problematic is that usually we need to 'know' what the population distribution is for our actual test on the ability scale of the pretest. In some instances we can take a fairly educated guess.
 
@@ -145,12 +148,11 @@ items = tibble(item_id = sprintf('item%03i',1:300),
 
 ```
 
-Next is a choice of what we want to optimize. The options are test length, information, or the sum of an arbitrary quality index. To this we can add a number of constraints. These can be:
+Next is a choice of what we want to optimize. The options are number of items (optionally weighted), information, or a random test. To this we can add any number of constraints. These can be:
 
-* the number of items
-* maximum SEM at selected points on the ability scale
-* a range of expected average pvalue
-* a test matrix, either as ratio or number of items
+* numbers or fractions of items of a specific type
+* minimum information/maximum SEM at selected points on the ability scale
+* a range of expected average pvalue (proportion correct)
 
 In addition we can have items selected as groups, similar to the pretest design above. Below we optimize test information at $\theta = 0.5$.
 
@@ -197,7 +199,7 @@ routing_test = test_design(items,
 
 ```
 
-Next we design an MST test by providing the routing module, the number of second stage modules and any other constraints. The constraints apply to each resulting booklet individually, i.e. to each combination of the routing module and the second stage module. A future version of the package might offer more flexibility in this regard.
+Next we design an MST test by providing the routing module, the number of second stage modules and any other constraints. The constraints apply to each resulting booklet individually, i.e. to each combination of the routing module and the second stage module, with the exception of the difficulty constraint which applies to the individual modules by default, see the help for more details.
 
 ```{r}
 ds = mst_design(items, 
@@ -215,7 +217,7 @@ ds = mst_design(items,
 head(ds$design)
 ```
 
-The mst_design function returns a list containing a design and routing rules. For the mst design we have an experimental plot. The upper margin shows the ability distributions in each booklet while the main plot shows the information. The dotted line shows the weighted sum of the booklet information (weighted according to the probability of making this booklet given theta). This is the function that is optimized in the mst_design function. I'm not really sure if that is the correct way to do it yet.
+The mst_design function returns a list containing a design and routing rules. For the mst design we have an experimental plot. The upper margin shows the expectedability distributions in each booklet while the main plot shows the information. The dotted line shows the weighted sum of the booklet information (weighted according to the probability of making this booklet given theta). This is the function that is optimized in the mst_design function.
 
 ```{r}
 plot_mst_design(ds,pars,type='info', ref_lines=c(-1,0,1))
