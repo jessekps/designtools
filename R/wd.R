@@ -14,7 +14,7 @@ tsalesman = function(m)
     res = tsp_sa(m)
     for(i in 1:5)
     {
-      r= tsp_sa(m)
+      r = tsp_sa(m)
       if(r$cost < res$cost) res = r
     }
   }

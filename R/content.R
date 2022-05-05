@@ -71,6 +71,23 @@ cspec_compare = function(cspec, op = c('>','>=','<','<=','=='), e2)
   out
 }
 
+cspec_compare2 = function(cspec, op = c('>','>=','<','<=','=='), cspec2)
+{
+  if(cspec@type != cspec2@type)
+    stop('canot compare different types of content specification')
+  
+  out = list(e1=list(qpredicate = cspec@qpredicate, qsubset=cspec@qsubset, paths=cspec@paths, type=cspec@type,
+                    op = match.arg(op),e2=0),
+             e2=list(qpredicate = cspec2@qpredicate, qsubset=cspec2@qsubset, paths=cspec2@paths, type=cspec2@type,
+                     op = '==',e2=0))
+  
+  class(out$e1) = c('content_specification',class(out$e1))
+  class(out$e2) = c('content_specification',class(out$e2))
+  class(out) = c('content_specification2',class(out))
+  out
+}
+
+
 #' Comparison methods for content specifications
 #' 
 #' @param e1 content specification or a scalar number
@@ -97,9 +114,30 @@ setMethod('<', c(e1="numeric",e2="cspec"), function(e1,e2) cspec_compare(e2,'>',
 #' @rdname  content-specification-methods
 setMethod('==', c(e1="numeric",e2="cspec"), function(e1,e2) cspec_compare(e2,'==',e1))
 
+setMethod('>=',c(e1="cspec",e2="cspec"), function(e1,e2) cspec_compare2(e2,'<=',e1))
+#' @rdname  content-specification-methods
+setMethod('>', c(e1="cspec",e2="cspec"), function(e1,e2) cspec_compare2(e2,'<',e1))
+#' @rdname  content-specification-methods
+setMethod('<=',c(e1="cspec",e2="cspec"), function(e1,e2) cspec_compare2(e2,'>=',e1))
+#' @rdname  content-specification-methods
+setMethod('<', c(e1="cspec",e2="cspec"), function(e1,e2) cspec_compare2(e2,'>',e1))
+#' @rdname  content-specification-methods
+setMethod('==', c(e1="cspec",e2="cspec"), function(e1,e2) cspec_compare2(e2,'==',e1))
+
+
+to_lp.content_specification2 = function(f,...,items,env, mst=NULL)
+{
+  a = to_lp(f[[1]],...,items=items,env=env, mst=mst)
+  b = to_lp(f[[2]],...,items=items,env=env, mst=mst)
+  for(i in seq_along(a))
+    a[[i]]$xt = a[[i]]$xt - b[[i]]$xt
+  a
+}
+
 
 to_lp.content_specification = function(f,...,items,env, mst=NULL)
 {
+
   p = eval_tidy(f$qpredicate, data=items,env=env)
   s = eval_tidy(f$qsubset, data=items,env=env)
   e2 = f$e2
@@ -341,6 +379,7 @@ to_lp.constraint_difficulty = function(f,...,items, pars, population_density, ms
     nmod = max(mst$rt_cut)
     if(is.null(f$modules))
       modules = 1:nmod
+    else modules = f$modules
     if(any(modules<1 | modules>nmod))
       stop("invalid modules specifier in difficulty constraint")
     
@@ -429,7 +468,7 @@ maximize_information = function(theta=0,weight=1)
 
 to_lp.objective_item = function(f, ..., items, env)
 {
-  if(is.null(f$qp))
+  if(is.null(f$qproperty))
     xt = rep(1,nrow(items))
   else
     xt = as.numeric(eval_tidy(f$qproperty, data=items, env=env))

@@ -229,14 +229,14 @@ mst_design = function(items, routing_module,
     if(!friends %in% colnames(items))
       stop('Column',friends,'not found in item_properties')
     
-    l = lpm$get_model(group = items[[friends]])
-    status = solve(l)
-    if(!status %in% 0:1)
+    res = lpm$solve_separate(group = items[[friends]])
+
+    if(!res$success)
     {
       message('no solution found')
       return(NULL)
     }
-    res = as.logical(get.variables(l))
+    res =res$result
     f = sort(unique(items[[friends]]))
     res = apply(matrix(res,byrow=TRUE,nrow=nmod),1, function(g)
     {
@@ -248,16 +248,16 @@ mst_design = function(items, routing_module,
     
   } else
   {
-    l = lpm$get_model()
-    status = solve(l)
-    if(!status %in% 0:1)
+    res = lpm$solve_separate()
+    if(!res$success)
     {
       message('no solution found')
       return(NULL)
     }
+
     res = tibble(item_id=rep(items$item_id,nmod),
                  module = rep(1:nmod,each=nrow(items)),
-                 stage=2L,booklet=.data$module)[as.logical(get.variables(l)),]
+                 stage=2L,booklet=.data$module)[res$result,]
   }
   #delete.lp(l)
   routing_module$module=0L
@@ -324,6 +324,8 @@ report_mst = function(design, routing,pars,population_density,theta=NULL)
   rt_items = filter(design, .data$module==0 & .data$booklet==1) %>%
     arrange(.data$item_id)
   
+  if(!inherits(pars,'data.frame')) pars=coef(pars)
+  
   rt_pars = semi_join(pars, rt_items, by='item_id') %>% arrange(.data$item_id)
   pars = semi_join(pars, items, by='item_id') %>% arrange(.data$item_id)
   mst = list(rt_items = rt_items, rt_cut=routing$next_module, rt_pars=rt_pars)
@@ -343,18 +345,26 @@ report_mst = function(design, routing,pars,population_density,theta=NULL)
   }
   
   df = to_lp(difficulty_constraint(0.5), items=items, pars=pars, population_density=population_density,mst=mst)
-  xt = lapply(1:nmod, function(i) df[[i]]$xt[filter(included,.data$module==i)$included] + 0.5)
+  pval = bind_rows(lapply(1:nmod, function(i) tibble(module=i,item_id=items$item_id,pvalue=df[[i]]$xt+0.5))) 
+
   
-  out$pvalue = tibble(module=1:nmod,
-                      avg_pvalue=sapply(xt, mean),
-                      min_pvalue=sapply(xt, min),
-                      max_pvalue=sapply(xt, max))
+  pval = included |>
+    filter(included) |>
+    select(item_id,module) |>
+    mutate(booklet_id=module) |>
+    inner_join(pval,by=c('item_id','module'))
+  
+  df = to_lp(difficulty_constraint(0.5), items=rt_items, pars=rt_pars, population_density=population_density,mst=mst)
+  pval2 = bind_rows(lapply(1:nmod, function(i) tibble(booklet_id=i,module=0,item_id=rt_items$item_id,pvalue=df[[i]]$xt+0.5))) 
+  out$pvalue = union_all(pval,pval2)
   out
 }
 
 report_linear = function(items,pars,population_density,theta=NULL)
 {
   cols = setdiff(colnames(items),c('item_id','module','booklet','stage'))
+  if(!inherits(pars,'data.frame'))
+    pars=coef(pars)
 
   res = lapply(cols, function(cn)
     {
@@ -381,9 +391,9 @@ report_linear = function(items,pars,population_density,theta=NULL)
     out$information = tibble(theta=theta, information=ii, sem=1/sqrt(ii))
   }
   
-  xt = to_lp(difficulty_constraint(0.5), items=items, pars=pars, population_density=population_density)$xt + 0.5
+  xt = to_lp(difficulty_constraint(0.5), items=items, pars=pars, population_density=population_density)[[1]]$xt + 0.5
 
-  out$pvalue = tibble(avg_pvalue=mean(xt),min_pvalue=min(xt),max_pvalue=max(xt))
+  out$pvalue = tibble(item_id=items$item_id,pvalue=xt)
   out
 }
 

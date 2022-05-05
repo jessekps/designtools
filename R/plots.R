@@ -70,6 +70,15 @@ plot_mst_design = function(md,pars, populaton_density=dnorm,type=c('sem','info')
       geom_line(aes(y=.data$avg_sem),data=dat2,linetype='dashed') +
       ylab('sem') +
       theme_bw()
+    
+    if(!is.null(ref_lines))
+    {
+      ymn = sapply(ref_lines,function(tht) dat2$avg_sem[which.min(abs(dat2$theta-tht))])
+      
+      p = p + 
+        geom_segment(data=tibble(theta=ref_lines,ymn=ymn),
+                     aes(xend=.data$theta,yend=.data$ymn),y=max(dat$sem),linetype='dotdash') 
+    }
   }
   
   m = ggplot(dat,aes(x=.data$theta,y=.data$w)) +

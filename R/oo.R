@@ -1,9 +1,14 @@
 
+
+
 lpsolve = function(lp) solve(lp) %in% c(0,1,9,12)
 
-# in case of infeasibility we can replace the objective function by a penalized constraint
-# if it turns out positive/negative then this constraint (psbl in combination with another)
-# is infeasible
+scale_objective = function(val)
+{
+  if(any(val<0))
+    stop('negative values in objective are not allowed')
+  val/max(val)
+}
 
 LPM = setRefClass('LPM',
 	fields = list(objf = 'list', cm = 'list', tp = 'character', rh = 'list', nit='integer',
@@ -47,7 +52,10 @@ LPM = setRefClass('LPM',
 	  
 	  get_constraint_names = function() cname,
 	  
-	  get_model = function(group=NULL, item_use = NULL, constraints=NULL)
+	  # single_booklet=NULL gives the combined model
+	  # presently, we have no cross booklet constraints so it is always save
+	  # and almost always faster and sometimes better to solve per booklet
+	  get_model = function(group=NULL, constraints=NULL, single_booklet=NULL) 
 	  {
 	    if(is.null(constraints))
 	      constraints = cname
@@ -64,9 +72,20 @@ LPM = setRefClass('LPM',
 	      M = nit
 	      g = identity
 	    }
-	    l = make.lp(length(tp), M*nbk)
-	    set.type(l, 1:(M*nbk), 'binary')
-	    set.objfn(l, g(objf$w))
+	    if(is.null(single_booklet) || nbk == 1)
+	    {
+	      l = make.lp(0, M*nbk)
+	      set.type(l, 1:(M*nbk), 'binary')
+	      set.objfn(l, scale_objective(g(objf$w)))
+	    } 
+	    else
+	    {
+	      stopifnot(single_booklet %in% 1:nbk)
+	      l = make.lp(0, M)
+	      set.type(l, 1:M, 'binary')
+	      set.objfn(l, scale_objective(g(objf$w[1:M + (single_booklet-1L)*M])))
+	    }
+	    
 	    lp.control(l, sense=objf$type)
 	    
 	    for(i in seq_along(rh))
@@ -75,23 +94,29 @@ LPM = setRefClass('LPM',
 	      {
   	      if(nbk == 1L || is.na(booklet[i]))
   	        add.constraint(l, g(cm[[i]]), tp[i], rh[[i]])
-  	      else
+  	      else if(is.null(single_booklet))
   	        add.constraint(l, g(cm[[i]]), tp[i], rh[[i]], indices = (1L+(booklet[i]-1L)*M):(booklet[i]*M))
+	        else if(single_booklet == booklet[i])
+	        {
+	          add.constraint(l, g(cm[[i]]), tp[i], rh[[i]])
+	        } 
 	      }
 	     }
 	    
-	    if(!is.null(item_use) && nbk>1)
-	    {
-	      w = rep(1L,nbk)
-	      for(i in 1:M)
-	      {
-	        add.constraint(l,w,'=', item_use, indices=seq(i, nbk*M, M))
-	      }
-	    }
-	    
 	    l
 	  },
-	  solve_model = function(..., fail=c('abort','investigate','force'), optimal=TRUE)
+	  solve_separate = function(..., fail=c('abort','investigate','force'), optimal=TRUE, timeout=120)
+	  {
+	    slv = lapply(1:nbk,function(i){
+	      solve_model(..., single_booklet=i, fail=fail, optimal=optimal,timeout=timeout)
+	    })
+	    if(all(sapply(slv,'[[','success')))
+	    {
+	      return(list(success=TRUE,result = unlist(lapply(slv,'[[','result'))))
+	    } 
+	    list(success=FALSE,result=NULL)
+	  },
+	  solve_model = function(..., fail=c('abort','investigate','force'), optimal=TRUE, timeout=120)
 	  {
 	    res=NULL
 	    fail = match.arg(fail)
@@ -99,9 +124,12 @@ LPM = setRefClass('LPM',
 	    if(!optimal)
 	      lp.control(lpm, break.at.first=TRUE)
 	    
+	    if(timeout>0)
+	      lp.control(lpm,timeout=timeout)
+	    
 	    status = solve(lpm)
 	    
-	    if(status %in% c(0,1,9,12))
+	    if(status %in% c(0,1,9,11,12))
 	    {
 	      res = list(success = TRUE, result = as.logical(get.variables(lpm)),status=status)
 	    }
