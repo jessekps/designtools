@@ -1,6 +1,4 @@
-
-
-
+# to do: this should become a standard plot, not a gg mess
 
 #' IRT plot of mst design effects
 #' 
@@ -31,7 +29,7 @@ plot_mst_design = function(md,pars, populaton_density=dnorm,type=c('sem','info')
   dat = lapply(split(md$design,md$design$booklet), function(ds){
     i = ds$booklet[1]
     wm = w * p_mod[,i]
-    wm = wm/sum(wm)
+    #wm = wm/sum(wm)
     info = info_test(inner_join(ds,pars,by='item_id'),grd)
     
     tibble(theta=grd,booklet=i, 
@@ -115,7 +113,10 @@ plot.ds_marginal_plot = function(x,...)
     if(length(add)==0)
       return(mgg)
   }
+  if(names(add) == 'xlim')
+    mgg$m = mgg$m + add
   
   mgg$p = mgg$p + add
   mgg
 }
+

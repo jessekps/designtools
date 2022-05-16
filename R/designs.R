@@ -2,11 +2,15 @@
 
 
 
-#' Linear  test design through LP
+#' Test design through LP
+#' 
+#' Design a linear or two stage multi stage test based on a linear programming solver.
 #'
 #' @param items data.frame with column item_id and any other columns used in the constraints or as 'friends'
 #' @param ... constraints on test content or psychometric properties, see details
 #' @param objective function to optimize, see details
+#' @param routing_cutoff vector of cutoff points (inclusive) on the routing module. If NULL, the point will be computed 
+#' to get approximately equal sized groups in each path.
 #' @param pars item parameters, either a data.frame or a fit object from dexter::fit_enorm, dexterMST::fit_enorm_MST
 #' @param friends name of a column in items that specifies friend groups (e.g. a text_id for reading texts)
 #' @param population_density density function, eg `dnorm` or `function(x) dnorm(x,mean=1,1)`
@@ -137,10 +141,11 @@ test_design = function(items, ...,
 
 
 #' @rdname test_design
-mst_design = function(items, routing_module,
+mst_design = function(items, routing_module, 
                        ...,
+                       routing_cutoff = NULL,
                        objective = random_test(),
-                       nmod=3L,
+                       nmod = ifelse(!is.null(routing_cutoff),length(routing_cutoff)+1, 3),
                        pars = NULL,
                        population_density = dnorm,
                        friends = NULL)
@@ -199,11 +204,27 @@ mst_design = function(items, routing_module,
   
   # choose routing points to divide population in equal groups
   rt_pars = semi_join(pars, routing_module, by='item_id')
-  s = seq(-6,6,0.1)
-  w = population_density(s)
-  w = w/sum(w)
-  P = w %*% Ps_test(rt_pars,s)
-  rt_cut = cut(cumsum(P),nmod,labels=FALSE)
+  if(is.null(routing_cutoff))
+  {
+    s = seq(-6,6,0.1)
+    w = population_density(s)
+    w = w/sum(w)
+    P = w %*% Ps_test(rt_pars,s)
+    rt_cut = cut(cumsum(P),nmod,labels=FALSE)
+  } else
+  {
+    if(length(routing_cutoff)+1 != nmod)
+      stop(sprintf('cutoff points suggest %i modules but nmod=%i',length(routing_cutoff)+1,nmod))
+    
+    rt_max_score = rt_pars %>%
+      group_by(.data$item_id) %>%
+      summarise(m=max(.data$item_score)) %>%
+      pull(.data$m) %>%
+      sum()
+    
+    rt_cut = cut(0:rt_max_score,c(-1L,routing_cutoff,rt_max_score+1L),labels=FALSE)
+  }
+  
   
   mst = list(rt_pars=rt_pars, rt_cut=rt_cut,items=routing_module)
   
@@ -223,13 +244,17 @@ mst_design = function(items, routing_module,
       do.call(lpm$add_constraint,ct)
   }
   
+  global_contraints = any(sapply(constraints, inherits,'constraint_information'))
   
   if(!is.null(friends))
   {
     if(!friends %in% colnames(items))
       stop('Column',friends,'not found in item_properties')
     
-    res = lpm$solve_separate(group = items[[friends]])
+    if(global_contraints)
+      res = lpm$solve_model(group = items[[friends]])
+    else
+      res = lpm$solve_separate(group = items[[friends]])
 
     if(!res$success)
     {
@@ -244,11 +269,16 @@ mst_design = function(items, routing_module,
              stage=2L)  
     }) %>%
       bind_rows(.id='module') %>%
-      mutate(module=as.integer(.data$module))
+      mutate(module=as.integer(.data$module),
+             booklet=.data$module)
     
   } else
   {
-    res = lpm$solve_separate()
+    if(global_contraints)
+      res = lpm$solve_model()
+    else
+      res = lpm$solve_separate()
+    
     if(!res$success)
     {
       message('no solution found')
@@ -330,7 +360,7 @@ report_mst = function(design, routing,pars,population_density,theta=NULL)
   pars = semi_join(pars, items, by='item_id') %>% arrange(.data$item_id)
   mst = list(rt_items = rt_items, rt_cut=routing$next_module, rt_pars=rt_pars)
   
-  included = tibble(item_id=rep(items$item_id,3), module=rep(1:nmod,each=nrow(items))) %>%
+  included = tibble(item_id=rep(items$item_id,nmod), module=rep(1:nmod,each=nrow(items))) %>%
     left_join(design,by=c('module','item_id')) %>%
     mutate(included = !is.na(.data$booklet)) 
   
@@ -349,9 +379,9 @@ report_mst = function(design, routing,pars,population_density,theta=NULL)
 
   
   pval = included |>
-    filter(included) |>
-    select(item_id,module) |>
-    mutate(booklet_id=module) |>
+    filter(.data$included) |>
+    select(.data$item_id,.data$module) |>
+    mutate(booklet_id=.data$module) |>
     inner_join(pval,by=c('item_id','module'))
   
   df = to_lp(difficulty_constraint(0.5), items=rt_items, pars=rt_pars, population_density=population_density,mst=mst)

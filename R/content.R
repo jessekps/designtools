@@ -1,6 +1,6 @@
 
 
-setClassUnion("call_or_NULL", c("call", "NULL"))
+setClassUnion("call_or_NULL_or_name", c("call", "NULL","name"))
 setClassUnion("integer_or_NULL", c("integer", "NULL"))
 
 to_lp = function(x,...) UseMethod("to_lp")
@@ -13,7 +13,7 @@ needs_pars = function(f)
 # content constraints -----------------------------------------------------
 
 
-content_spec = setClass("cspec",slots=c(qpredicate='call_or_NULL',qsubset='call_or_NULL', paths="integer_or_NULL",
+content_spec = setClass("cspec",slots=c(qpredicate='call_or_NULL_or_name',qsubset='call_or_NULL_or_name', paths="integer_or_NULL",
                                  type='character'))
 
 spec_paths = function(paths)
@@ -49,7 +49,7 @@ item_sum = function(predicate,paths=NULL)
 {
   qp = eval(substitute(quote(predicate)))
 
-  content_spec(qpredicate=qp, qubset=NULL, type='sum', paths=spec_paths(paths))
+  content_spec(qpredicate=qp, qsubset=NULL, type='sum', paths=spec_paths(paths))
 }
 
 #' @rdname item_fraction
@@ -114,6 +114,7 @@ setMethod('<', c(e1="numeric",e2="cspec"), function(e1,e2) cspec_compare(e2,'>',
 #' @rdname  content-specification-methods
 setMethod('==', c(e1="numeric",e2="cspec"), function(e1,e2) cspec_compare(e2,'==',e1))
 
+#' @rdname  content-specification-methods
 setMethod('>=',c(e1="cspec",e2="cspec"), function(e1,e2) cspec_compare2(e2,'<=',e1))
 #' @rdname  content-specification-methods
 setMethod('>', c(e1="cspec",e2="cspec"), function(e1,e2) cspec_compare2(e2,'<',e1))
@@ -168,8 +169,8 @@ to_lp.content_specification = function(f,...,items,env, mst=NULL)
   {
     p = as.numeric(p)
     e2 = as.numeric(e2)
-    if(any(p<0))
-      stop('predicate may not result in negative values')
+    #if(any(p<0))
+    #  stop('predicate may not result in negative values')
   }
   
   if(f$type == 'fraction')

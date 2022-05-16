@@ -14,7 +14,6 @@ Imports:
     rlang,
     tidyr,
     lpSolveAPI,
-    igraph,
     egg,
     ggplot2,
     stats,

@@ -11,6 +11,11 @@
 \alias{<=,numeric,cspec-method}
 \alias{<,numeric,cspec-method}
 \alias{==,numeric,cspec-method}
+\alias{>=,cspec,cspec-method}
+\alias{>,cspec,cspec-method}
+\alias{<=,cspec,cspec-method}
+\alias{<,cspec,cspec-method}
+\alias{==,cspec,cspec-method}
 \title{Comparison methods for content specifications}
 \usage{
 \S4method{>=}{cspec,numeric}(e1, e2)
@@ -32,6 +37,16 @@
 \S4method{<}{numeric,cspec}(e1, e2)
 
 \S4method{==}{numeric,cspec}(e1, e2)
+
+\S4method{>=}{cspec,cspec}(e1, e2)
+
+\S4method{>}{cspec,cspec}(e1, e2)
+
+\S4method{<=}{cspec,cspec}(e1, e2)
+
+\S4method{<}{cspec,cspec}(e1, e2)
+
+\S4method{==}{cspec,cspec}(e1, e2)
 }
 \arguments{
 \item{e1}{content specification or a scalar number}

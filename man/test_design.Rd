@@ -3,7 +3,7 @@
 \name{test_design}
 \alias{test_design}
 \alias{mst_design}
-\title{Linear  test design through LP}
+\title{Test design through LP}
 \usage{
 test_design(
   items,
@@ -18,8 +18,9 @@ mst_design(
   items,
   routing_module,
   ...,
+  routing_cutoff = NULL,
   objective = random_test(),
-  nmod = 3L,
+  nmod = ifelse(!is.null(routing_cutoff), length(routing_cutoff) + 1, 3),
   pars = NULL,
   population_density = dnorm,
   friends = NULL
@@ -40,13 +41,16 @@ mst_design(
 
 \item{routing_module}{data.frame with column item_id, specifying the routing module}
 
+\item{routing_cutoff}{vector of cutoff points (inclusive) on the routing module. If NULL, the point will be computed 
+to get approximately equal sized groups in each path.}
+
 \item{nmod}{numer of modules}
 }
 \value{
 A tibble with the selected items.
 }
 \description{
-Linear  test design through LP
+Design a linear or two stage multi stage test based on a linear programming solver.
 }
 \examples{
 library(dplyr)

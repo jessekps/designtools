@@ -9,7 +9,6 @@ importFrom(egg, "ggarrange")
 
 
 import(lpSolveAPI)
-importFrom(igraph,"graph_from_adjacency_matrix","ego")
 
 importFrom(stats, "dnorm", "coef", "runif")
 importFrom(utils, "combn", "getS3method")

@@ -65,7 +65,7 @@ LPM = setRefClass('LPM',
 	    if(!is.null(group))
 	    {
 	      M = n_distinct(group)
-	      group2 = sprintf("%05i %s", rep(1:nbk,each=nit), rep(group,nbk))
+        group2 = sprintf("%05i %s", rep(1:nbk,each=nit), rep(group,nbk))
 	      g = function(x) rowsum(x,if(length(x)==nit) group else group2)
 	    } else
 	    {
@@ -83,7 +83,7 @@ LPM = setRefClass('LPM',
 	      stopifnot(single_booklet %in% 1:nbk)
 	      l = make.lp(0, M)
 	      set.type(l, 1:M, 'binary')
-	      set.objfn(l, scale_objective(g(objf$w[1:M + (single_booklet-1L)*M])))
+	      set.objfn(l, scale_objective(g(objf$w)[1:M + (single_booklet-1L)*M]))
 	    }
 	    
 	    lp.control(l, sense=objf$type)
