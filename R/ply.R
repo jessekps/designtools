@@ -252,14 +252,10 @@ bin_items2 = function(items, nbins, balance=NULL, friends=NULL)
     m = rep(floor(nrow(items)/nbins), nbins)
     m[1:r] = m[1:r] + 1L
     items$bin = rep(1:nbins, m)
-    list(items=items,bin_prop=matrix(m,nrow=1))  
+    return(list(items=items,bin_properties=matrix(m,nrow=1)))
   }
   
   if(is.null(friends)) friends = 'item_id'
-  
-  np = 1 
-  if(is.null(balance))
-    np = np + sum(sapply(balance, function(n) n_distinct(items[[n]])))
   
   nit = nrow(items)
   bd = count(items, .data[[friends]]) %>% arrange(desc(n))

@@ -55,7 +55,7 @@ pretest_design = function(items, max_nit, balance=NULL, friends=NULL)
   {
     for(j in (i+1):nblocks)
     {
-      m[i,j] = m[i,j] + sum(abs(rowSums(res$bin_properties[,c(i,j)]) - bk_opt))
+      m[i,j] = m[i,j] + sum(abs(rowSums(res$bin_properties[,c(i,j),drop=FALSE]) - bk_opt))
       if(sum(res$bin_properties[1,c(i,j)]) > max_nit) m[i,j] = m[i,j] + 1000
     }
     
