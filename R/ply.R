@@ -250,7 +250,7 @@ bin_items2 = function(items, nbins, balance=NULL, friends=NULL)
   {
     r = nrow(items) %% nbins
     m = rep(floor(nrow(items)/nbins), nbins)
-    m[1:r] = m[1:r] + 1L
+    if(r>0) m[1:r] = m[1:r] + 1L
     items$bin = rep(1:nbins, m)
     return(list(items=items,bin_properties=matrix(m,nrow=1)))
   }
