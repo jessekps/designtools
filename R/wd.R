@@ -75,7 +75,7 @@ pretest_design = function(items, max_nit, balance=NULL, friends=NULL)
   r = c(r[-1],r[1])
   
   tibble( booklet_id = rep(1:nblocks, each=2),
-          block = (1:nblocks)[r],
+          block = (1:nblocks)[r+1L],
           bn = c(1L,rep(2:nblocks,each=2),1L)
   ) %>%
     inner_join(items,by='block') %>%
