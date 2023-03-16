@@ -76,11 +76,11 @@ pretest_design = function(items, max_nit, balance=NULL, friends=NULL)
     r = rep(res2$path, each=2)
   } else
   {
-    r = rep(1:nblocks,each=2) - 1L
+    r = rep(1:nblocks,each=2)
   }
   r = c(r[-1],r[1])
   tibble( booklet_id = rep(1:nblocks, each=2),
-          block = (1:nblocks)[r+1L],
+          block = (1:nblocks)[r],
           bn = c(1L,rep(2:nblocks,each=2),1L)
   ) %>%
     inner_join(items,by='block') %>%
