@@ -47,33 +47,38 @@ pretest_design = function(items, max_nit, balance=NULL, friends=NULL)
   
   items = rename(res$items,block='bin') 
 
-  # now make a cost matrix for block association
-  # optimal
-  bk_opt = rowMeans(res$bin_properties) * 2
-  m = matrix(0L,nblocks,nblocks)
-  for(i in 1:(nblocks-1))
+  if(!all(apply(res$bin_properties,1,n_distinct)==1))
   {
-    for(j in (i+1):nblocks)
+    # now make a cost matrix for block association
+    # optimal
+    bk_opt = rowMeans(res$bin_properties) * 2
+    m = matrix(0L,nblocks,nblocks)
+    for(i in 1:(nblocks-1))
     {
-      m[i,j] = m[i,j] + sum(abs(rowSums(res$bin_properties[,c(i,j),drop=FALSE]) - bk_opt))
-      if(sum(res$bin_properties[1,c(i,j)]) > max_nit) m[i,j] = m[i,j] + 1000
+      for(j in (i+1):nblocks)
+      {
+        m[i,j] = m[i,j] + sum(abs(rowSums(res$bin_properties[,c(i,j),drop=FALSE]) - bk_opt))
+        if(sum(res$bin_properties[1,c(i,j)]) > max_nit) m[i,j] = m[i,j] + 1000
+      }
+      
     }
+    diag(m)=0
+    m[lower.tri(m)] = t(m)[lower.tri(m)]
     
+    #alleen nog maar voor integers geprogrammeerd
+    
+    m = m*1000
+    mode(m)='integer'
+    
+    res2 = tsalesman(m)
+    
+  
+    r = rep(res2$path, each=2)
+  } else
+  {
+    r = rep(1:nblocks,each=2) - 1L
   }
-  diag(m)=0
-  m[lower.tri(m)] = t(m)[lower.tri(m)]
-  
-  #alleen nog maar voor integers geprogrammeerd
-  
-  m = m*1000
-  mode(m)='integer'
-  
-  res2 = tsalesman(m)
-  
-
-  r = rep(res2$path, each=2)
   r = c(r[-1],r[1])
-  
   tibble( booklet_id = rep(1:nblocks, each=2),
           block = (1:nblocks)[r+1L],
           bn = c(1L,rep(2:nblocks,each=2),1L)

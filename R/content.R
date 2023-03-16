@@ -1,4 +1,6 @@
 
+# to do: try https://github.com/dirkschumacher/rcbc as a back end, we could try to handle infeasibility
+# (or manually try to do adjust the optimalization function but give it a try)
 
 setClassUnion("call_or_NULL_or_name", c("call", "NULL","name"))
 setClassUnion("integer_or_NULL", c("integer", "NULL"))
