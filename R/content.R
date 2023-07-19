@@ -152,20 +152,24 @@ to_lp.content_specification = function(f,...,items,env, mst=NULL)
     if(e2<0 || e2 > 1) stop('A fraction must be between 0 and 1')
   } 
   if(length(p) != nrow(items))
-    stop('predicate must evaluate to a single value per row of items')
+    stop(sprintf('predicate "%s" does not evaluate to a single value per row of items'),deparse(f$qpredicate))
   
   if(f$type %in% c('fraction','count'))
   {
     if(!is.logical(p))
-      stop('Predicate must evaluate to a logical vector')
+      stop(sprintf('predicate "%s"does not evaluate to a logical vector', deparse(f$qpredicate)))
     if(!is.null(s) && !is.logical(s))
-      stop('Subset must evaluate to a logical vector')
+      stop(sprintf('Subset "%s" does not evaluate to a logical vector'),deparse(f$qsubset))
     p = as.integer(p)
     s = as.integer(s)
   }
   
-  if(any(is.na(p)) || any(is.na(s)))
-    stop('Predicate or subset may not contain NA values')
+  if(any(is.na(p)))
+    stop(sprintf('Predicate "%s" contains NA values',deparse(f$qpredicate)))
+  
+  if(any(is.na(s)))       
+     stop(sprintf('Subset "%s" contains NA values',deparse(f$qpredicate)))
+
   
   if(f$type == 'sum')
   {
