@@ -14,7 +14,10 @@ plot_mst_design = function(md,pars, populaton_density=dnorm,type=c('sem','info')
                     ref_lines=NULL)
 {
   type=match.arg(type)
-  rt_pars = md$design %>%
+  
+  design = select(md$design,'booklet','item_id','module')
+  
+  rt_pars = design %>%
     filter(.data$module==0) %>%
     distinct(.data$item_id) %>%
     inner_join(pars,by='item_id')
@@ -26,7 +29,7 @@ plot_mst_design = function(md,pars, populaton_density=dnorm,type=c('sem','info')
   p_mod = t(apply(ps,1,rowsum,group=md$routing$next_module))
   
   
-  dat = lapply(split(md$design,md$design$booklet), function(ds){
+  dat = lapply(split(design,design$booklet), function(ds){
     i = ds$booklet[1]
     wm = w * p_mod[,i]
     #wm = wm/sum(wm)
@@ -80,7 +83,7 @@ plot_mst_design = function(md,pars, populaton_density=dnorm,type=c('sem','info')
   }
   
   m = ggplot(dat,aes(x=.data$theta,y=.data$w)) +
-    geom_line(aes(colour=.data$booklet),show.legend=F) +
+    geom_line(aes(colour=.data$booklet),show.legend=FALSE) +
     geom_area(aes(fill=.data$booklet),show.legend=FALSE,position='identity',alpha=0.2) +
     theme_void() 
   
