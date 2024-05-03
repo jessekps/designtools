@@ -217,9 +217,9 @@ ds = mst_design(items,
 head(ds$design)
 ```
 
-The mst_design function returns a list containing a design and routing rules. For the mst design we have an experimental plot. The upper margin shows the expectedability distributions in each booklet while the main plot shows the information. The dotted line shows the weighted sum of the booklet information (weighted according to the probability of making this booklet given theta). This is the function that is optimized in the mst_design function.
+The mst_design function returns a list containing a design and routing rules. For the mst design we have an experimental plot. The upper margin shows the expected ability distributions in each booklet (the division of the input population density according to the routing rules) while the main plot shows the information function. The dotted line shows the weighted sum of the booklet information (weighted according to the probability of making this booklet given theta). This is the function that is optimized in the mst_design function.
 
 ```{r}
-plot_mst_design(ds,pars,type='info', ref_lines=c(-1,0,1))
+plot_mst_design(ds,pars,type='info', populaton_density=dnorm, ref_lines=c(-1,0,1))
 ```
 
